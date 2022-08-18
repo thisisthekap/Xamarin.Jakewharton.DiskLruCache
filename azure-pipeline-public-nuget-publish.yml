@@ -38,7 +38,7 @@ steps:
 
 - task: GitHubRelease@1
   inputs:
-    gitHubConnection: 'thisisthekap'
+    gitHubConnection: 'github.com_thisisthekap'
     repositoryName: 'thisisthekap/Xamarin.Jakewharton.DiskLruCache'
     action: 'create'
     target: '$(Build.SourceVersion)'
