@@ -1,0 +1,18 @@
+pr:
+  - master
+
+pool:
+  vmImage: 'macOS-11'
+
+steps:
+
+- bash: |
+    echo "##vso[build.updatebuildnumber]pullrequests-xamarin-jakewharton-disklrucache-$(Build.SourceBranchName)-$(Build.BuildId)"
+  displayName: Set Build Number
+
+- bash: |
+    cd Xamarin.Jakewharton.DiskLruCache
+    msbuild /t:Restore /p:Configuration=Release
+    msbuild /t:Build /p:Configuration=Release
+    msbuild /t:Pack /p:Configuration=Release
+  displayName: "Xamarin.Jakewharton.DiskLruCache: Build Release Nuget"

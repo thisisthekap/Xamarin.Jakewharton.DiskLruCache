@@ -1,0 +1,50 @@
+trigger:
+  branches:
+    include:
+      - refs/tags/release-v*
+
+pr: none
+
+pool:
+  vmImage: 'macOS-11'
+
+variables:
+  - group: nuget.org
+
+steps:
+
+- bash: |
+    echo "##vso[task.setvariable variable=bindingsVersion]$(cat Xamarin.Jakewharton.DiskLruCache/Xamarin.Jakewharton.DiskLruCache.csproj | grep '<Version>' | awk -F '[<>]' '{print $3}')"
+
+- bash: |
+    echo "##vso[build.updatebuildnumber]production-xamarin-jakewharton-disklrucache-bindings-$(Build.SourceBranchName)-$(Build.BuildId)"
+
+- bash: |
+    if [[ "$(Build.SourceBranchName)" != *"$(bindingsVersion)" ]]; then
+      echo "mismatch between tag $(Build.SourceBranchName) and nuget version $(bindingsVersion)"
+      exit 1
+    fi
+
+- bash: |
+    cd Xamarin.Jakewharton.DiskLruCache
+    msbuild /t:Restore /p:Configuration=Release
+    msbuild /t:Build /p:Configuration=Release
+    msbuild /t:Pack /p:Configuration=Release
+  displayName: "Xamarin.Jakewharton.DiskLruCache: Build Release Nuget"
+
+- bash: |
+    dotnet nuget push Xamarin.Jakewharton.DiskLruCache/nugetoutput/Xamarin.Jakewharton.DiskLruCache.$(bindingsVersion).nupkg -k "$(nugetOrgApiKey)" -s https://api.nuget.org/v3/index.json
+  displayName: "Publish nuget package to nuget.org"
+
+- task: GitHubRelease@1
+  inputs:
+    gitHubConnection: 'github.com_thisisthekap'
+    repositoryName: 'thisisthekap/Xamarin.Jakewharton.DiskLruCache'
+    action: 'create'
+    target: '$(Build.SourceVersion)'
+    tagSource: 'userSpecifiedTag'
+    tag: '$(Build.SourceBranchName)'
+    title: 'Xamarin.Jakewharton.DiskLruCache $(bindingsVersion)'
+    assets: 'nugetoutput/Xamarin.Jakewharton.DiskLruCache.*.nupkg'
+    changeLogCompareToRelease: 'lastFullRelease'
+    changeLogType: 'issueBased'
